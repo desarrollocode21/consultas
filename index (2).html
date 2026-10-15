@@ -1,0 +1,1178 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Consultas HIS MINSA</title>
+<meta name="theme-color" content="#021F1C">
+<!-- Datos de salud: que no los indexen ni envíen la dirección a otros sitios -->
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+
+<style>
+/* =========================================================
+   1. BASE Y VARIABLES
+   ========================================================= */
+:root{
+  --menta:#5CF2D6; --teal:#14B8A6; --aqua:#38BDF8; --ambar:#FFC27A;
+  --violeta:#C4B5FD; --rosa:#F9A8D4; --rojo:#FF7B8A;
+  --suave:rgba(255,255,255,.72); --tenue:rgba(255,255,255,.52);
+  --ui:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
+  --ease:cubic-bezier(.2,.8,.2,1);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none !important}
+html,body{margin:0;min-height:100%}
+body{
+  font-family:var(--ui);color:#fff;overflow-x:hidden;
+  background:linear-gradient(180deg,#021F1C 0%,#053B4A 55%,#0B2A4A 100%) fixed;
+}
+
+/* Fondo animado: manchas de luz (solo transform, muy liviano) */
+.fondo{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none}
+.mancha{position:absolute;width:85vmax;height:85vmax;border-radius:50%;will-change:transform}
+.m1{left:-25vmax;top:-30vmax;background:radial-gradient(circle,rgba(92,242,214,.40),transparent 65%);animation:flota1 22s ease-in-out infinite alternate}
+.m2{right:-35vmax;top:25vh;background:radial-gradient(circle,rgba(56,189,248,.34),transparent 65%);animation:flota2 28s ease-in-out infinite alternate}
+.m3{left:5vmax;bottom:-45vmax;background:radial-gradient(circle,rgba(20,184,166,.32),transparent 65%);animation:flota3 34s ease-in-out infinite alternate}
+@keyframes flota1{to{transform:translate(35vmax,22vmax)}}
+@keyframes flota2{to{transform:translate(-30vmax,-18vmax)}}
+@keyframes flota3{to{transform:translate(28vmax,-24vmax)}}
+
+/* =========================================================
+   2. CRISTAL, BOTONES, CAMPOS, PASTILLAS
+   ========================================================= */
+.glass{
+  background:linear-gradient(135deg,rgba(255,255,255,.20),rgba(255,255,255,.06));
+  border:1px solid rgba(255,255,255,.26);
+  -webkit-backdrop-filter:blur(20px) saturate(140%);backdrop-filter:blur(20px) saturate(140%);
+  border-radius:26px;
+  box-shadow:0 12px 40px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.38);
+}
+.vista{position:relative;z-index:1;min-height:100vh;min-height:100dvh}
+
+.btn-glow{
+  position:relative;display:inline-flex;align-items:center;justify-content:center;gap:10px;
+  border:1px solid rgba(255,255,255,.7);border-radius:16px;cursor:pointer;
+  padding:0 26px;height:56px;font:800 1rem var(--ui);color:#00302B;
+  background:linear-gradient(135deg,var(--menta),var(--aqua));
+  box-shadow:0 0 22px rgba(92,242,214,.35);
+  transition:transform .15s,filter .2s,opacity .2s;
+}
+.btn-glow:hover:not(:disabled){transform:translateY(-1px);filter:brightness(1.08)}
+.btn-glow:active:not(:disabled){transform:scale(.98)}
+.btn-glow:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
+.btn-vidrio{
+  height:48px;padding:0 18px;border-radius:16px;cursor:pointer;font:700 .88rem var(--ui);color:#fff;
+  background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.3);transition:background .2s;
+}
+.btn-vidrio:hover{background:rgba(255,255,255,.22)}
+.btn-mini{
+  padding:7px 14px;border-radius:999px;cursor:pointer;font:700 .8rem var(--ui);color:#fff;
+  background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.3);
+}
+.btn-mini:hover{background:rgba(255,255,255,.22)}
+.mini-spin{
+  display:none;width:18px;height:18px;border-radius:50%;
+  border:3px solid rgba(0,48,43,.25);border-top-color:#00302B;animation:gira .7s linear infinite;
+}
+.btn-glow.cargando .mini-spin{display:inline-block}
+
+.campo{
+  position:relative;display:flex;align-items:center;gap:10px;flex:1;
+  height:56px;padding:0 16px;border-radius:16px;
+  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.28);
+  transition:border-color .2s,background .2s,box-shadow .2s;
+}
+.campo:focus-within{border-color:var(--menta);background:rgba(255,255,255,.11);box-shadow:0 0 0 3px rgba(92,242,214,.15)}
+.campo input{flex:1;min-width:0;height:100%;border:0;outline:0;background:transparent;color:#fff;font:600 1.05rem var(--ui)}
+.campo input::placeholder{color:var(--tenue);font-weight:500}
+.campo .ico{opacity:.85}
+.ojo{border:0;background:transparent;color:#fff;cursor:pointer;font-size:1.05rem;opacity:.75;padding:4px}
+.ojo:hover{opacity:1}
+
+.pill{display:inline-block;padding:3px 11px;border-radius:999px;font:700 .72rem var(--ui);white-space:nowrap}
+.p-menta{color:var(--menta);background:rgba(92,242,214,.16);border:1px solid rgba(92,242,214,.45)}
+.p-aqua{color:var(--aqua);background:rgba(56,189,248,.16);border:1px solid rgba(56,189,248,.45)}
+.p-ambar{color:var(--ambar);background:rgba(255,194,122,.16);border:1px solid rgba(255,194,122,.45)}
+.p-violeta{color:var(--violeta);background:rgba(167,139,250,.16);border:1px solid rgba(167,139,250,.45)}
+.p-rosa{color:var(--rosa);background:rgba(244,114,182,.16);border:1px solid rgba(244,114,182,.45)}
+
+@keyframes gira{to{transform:rotate(360deg)}}
+@keyframes sube{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+
+/* =========================================================
+   3. PANTALLA DE CARGA (SPLASH) Y LOGO ECG
+   ========================================================= */
+.splash{
+  position:fixed;inset:0;z-index:100;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;
+  background:linear-gradient(180deg,#021F1C,#053B4A 60%,#0B2A4A);
+  transition:opacity .6s ease,visibility .6s ease,transform .6s ease,filter .6s ease;
+}
+.splash.oculto{opacity:0;visibility:hidden;transform:scale(1.04);filter:blur(8px)}
+.splash h1{margin:6px 0 0;font-size:1.7rem;font-weight:800;letter-spacing:.02em;animation:sube .8s var(--ease) .3s both}
+.splash p{margin:0;color:var(--suave);font-size:.85rem;animation:sube .8s var(--ease) .45s both}
+.barra-carga{width:170px;height:3px;border-radius:3px;background:rgba(255,255,255,.14);overflow:hidden;margin-top:6px;animation:sube .8s var(--ease) .6s both}
+.barra-carga i{display:block;height:100%;width:40%;background:linear-gradient(90deg,transparent,var(--menta),transparent);animation:barrido 1.2s ease-in-out infinite}
+@keyframes barrido{from{transform:translateX(-100%)}to{transform:translateX(260%)}}
+
+.logo-wrap{
+  width:92px;height:92px;border-radius:50%;display:grid;place-items:center;
+  background:radial-gradient(circle,rgba(92,242,214,.18),rgba(92,242,214,.04));
+  border:1px solid rgba(92,242,214,.45);
+  animation:latido 2.2s ease-in-out infinite;
+}
+.logo-wrap svg{width:62px;height:auto;overflow:visible}
+@keyframes latido{
+  0%,100%{box-shadow:0 0 0 0 rgba(92,242,214,.35)}
+  50%{box-shadow:0 0 0 16px rgba(92,242,214,0)}
+}
+.ecg path{
+  fill:none;stroke:var(--menta);stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round;
+  stroke-dasharray:100;stroke-dashoffset:100;
+  filter:drop-shadow(0 0 5px rgba(92,242,214,.85));
+  animation:ecg 2.2s ease-in-out infinite;
+}
+@keyframes ecg{0%{stroke-dashoffset:100}55%{stroke-dashoffset:0}100%{stroke-dashoffset:-100}}
+
+/* =========================================================
+   4. LOGIN
+   ========================================================= */
+#vistaLogin{display:flex;align-items:center;justify-content:center;padding:24px;transition:opacity .4s,transform .4s,filter .4s}
+#vistaLogin.saliendo{opacity:0;transform:scale(.97);filter:blur(6px)}
+.login{width:min(100%,430px);padding:34px 28px 26px;text-align:center}
+.login > *{margin-left:auto;margin-right:auto}
+.login .logo-wrap{margin-bottom:14px}
+.login h1{margin:0;font-size:1.75rem;font-weight:800}
+.login .sub{margin:6px 0 22px;color:var(--suave);font-size:.9rem}
+.login form{display:flex;flex-direction:column;gap:12px}
+.login .btn-glow{width:100%;margin-top:4px}
+.msg-error{margin:14px 0 0;color:var(--rojo);font-size:.88rem;font-weight:600}
+.msg-info{margin:14px 0 0;color:var(--ambar);font-size:.85rem}
+.aviso-config{margin-top:14px;padding:10px 12px;border-radius:12px;font-size:.8rem;text-align:left;
+  color:var(--ambar);background:rgba(255,194,122,.12);border:1px solid rgba(255,194,122,.4)}
+.sedes-login{margin-top:22px;padding-top:16px;border-top:1px solid rgba(255,255,255,.12);
+  display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.sedes-login small{width:100%;color:var(--tenue);font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;margin-bottom:2px}
+
+/* Entrada escalonada de la tarjeta de login */
+.vista.entra .login{animation:tarjetaEntra .85s var(--ease) both}
+.vista.entra .login > *{animation:sube .7s var(--ease) both;animation-delay:calc(var(--i,0) * 80ms + 200ms)}
+@keyframes tarjetaEntra{from{opacity:0;transform:translateY(30px) scale(.95);filter:blur(10px)}to{opacity:1;transform:none;filter:none}}
+
+/* =========================================================
+   5. BIENVENIDA (después de ingresar)
+   ========================================================= */
+.bienvenida{
+  position:fixed;inset:0;z-index:90;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+  background:rgba(2,31,28,.78);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+  opacity:0;transition:opacity .35s;
+}
+.bienvenida.on{opacity:1}
+.check{width:96px;height:96px}
+.check circle,.check path{fill:none;stroke:var(--menta);stroke-width:3;stroke-linecap:round;stroke-linejoin:round;
+  stroke-dasharray:100;stroke-dashoffset:100;filter:drop-shadow(0 0 6px rgba(92,242,214,.8))}
+.bienvenida.on .check circle{animation:traza .7s ease forwards}
+.bienvenida.on .check path{animation:traza .45s ease .55s forwards}
+@keyframes traza{to{stroke-dashoffset:0}}
+.bienvenida h2{margin:10px 0 0;font-size:1.5rem;font-weight:800;opacity:0}
+.bienvenida p{margin:0;color:var(--suave);opacity:0}
+.bienvenida.on h2{animation:sube .6s var(--ease) .8s forwards}
+.bienvenida.on p{animation:sube .6s var(--ease) .95s forwards}
+
+/* =========================================================
+   6. APP
+   ========================================================= */
+.contenedor{max-width:920px;margin:0 auto;padding:calc(14px + env(safe-area-inset-top)) 16px calc(30px + env(safe-area-inset-bottom))}
+.vista.animar .anim{animation:sube .75s var(--ease) both;animation-delay:calc(var(--i,0) * 110ms)}
+
+.barra{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 2px 16px}
+.barra .marca{display:flex;align-items:center;gap:12px}
+.barra .logo-wrap{width:46px;height:46px;animation:none}
+.barra .logo-wrap svg{width:30px}
+.barra h1{margin:0;font-size:1.55rem;font-weight:800;letter-spacing:-.01em}
+.barra small{color:var(--suave)}
+.usuario{display:flex;align-items:center;gap:10px;font-size:.78rem;color:var(--suave);text-align:right}
+.usuario span{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
+
+.chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:12px}
+.chip{
+  padding:9px 18px;border-radius:999px;cursor:pointer;font:700 .85rem var(--ui);color:#fff;
+  background:linear-gradient(135deg,rgba(255,255,255,.18),rgba(255,255,255,.06));
+  border:1px solid rgba(255,255,255,.25);transition:all .2s;
+}
+.chip:hover{background:rgba(255,255,255,.22)}
+.chip.sel{color:#00352F;border-color:rgba(255,255,255,.75);background:linear-gradient(135deg,var(--menta),var(--teal));box-shadow:0 0 18px rgba(92,242,214,.3)}
+.chip-sm{padding:7px 14px;font-size:.78rem}
+.subchips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:-2px 0 14px}
+.subchips.abre{animation:despliega .35s var(--ease)}
+@keyframes despliega{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+
+.buscador{display:flex;gap:12px;padding:14px;margin-bottom:16px}
+
+/* Tarjeta del paciente */
+.paciente{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:14px;padding:16px;margin-bottom:12px;animation:pop .55s cubic-bezier(.2,.9,.3,1.2) both}
+@keyframes pop{from{opacity:0;transform:scale(.94) translateY(10px)}to{opacity:1;transform:none}}
+.avatar{width:54px;height:54px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:1.05rem;
+  color:#00302B;background:linear-gradient(135deg,var(--menta),var(--aqua));flex:none;box-shadow:0 0 18px rgba(92,242,214,.35)}
+.paciente .nombre{font-weight:800;font-size:1.1rem;line-height:1.25}
+.paciente .dni{color:var(--suave);font-size:.82rem;margin:2px 0 7px}
+.paciente .demo{display:flex;flex-wrap:wrap;gap:6px}
+.paciente .resumen{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px;padding-top:12px;border-top:1px solid rgba(255,255,255,.13)}
+.paciente .resumen small{width:100%;color:var(--tenue);font-size:.68rem;letter-spacing:.08em;text-transform:uppercase}
+
+/* Lista de atenciones */
+.toolbar{display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.toolbar .campo{flex:1;min-width:220px;height:50px;border-radius:18px}
+.lista{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px}
+.anio{grid-column:1/-1;display:flex;align-items:baseline;gap:10px;margin:10px 2px 0;font-weight:800;font-size:1.15rem;color:var(--menta)}
+.anio span{font-size:.72rem;color:var(--tenue);font-weight:600}
+.tarjeta{padding:16px;cursor:pointer;outline:none;transition:transform .2s,box-shadow .2s;
+  animation:sube .55s var(--ease) both;animation-delay:calc(var(--i,0) * 45ms)}
+.tarjeta:hover,.tarjeta:focus-visible{transform:translateY(-3px);box-shadow:0 16px 44px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.4)}
+.fila{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.fila .pills{display:flex;flex-wrap:wrap;gap:5px;justify-content:flex-end}
+.tarjeta .fecha{font-weight:800;font-size:1.02rem}
+.tarjeta .estab{margin-top:10px;font-weight:700;font-size:.92rem}
+.tarjeta .espec{color:var(--suave);font-size:.85rem}
+.tarjeta hr{border:0;height:1px;background:rgba(255,255,255,.15);margin:12px 0}
+.tarjeta .pie{font-size:.75rem;color:var(--tenue)}
+.tarjeta .pie b{color:var(--menta)}
+
+.vacio{padding:30px 20px;text-align:center;color:var(--suave);animation:sube .5s var(--ease) both}
+.vacio .grande{font-size:2.4rem;margin-bottom:8px}
+
+/* Esqueletos de carga */
+.esq{height:120px;border-radius:26px;
+  background:linear-gradient(90deg,rgba(255,255,255,.06) 25%,rgba(255,255,255,.15) 50%,rgba(255,255,255,.06) 75%);
+  background-size:200% 100%;animation:brilla 1.3s linear infinite}
+@keyframes brilla{to{background-position:-200% 0}}
+
+.pie-legal{margin-top:28px;text-align:center;font-size:.72rem;color:var(--tenue);line-height:1.5}
+
+/* =========================================================
+   7. FICHA CLÍNICA (modal)
+   ========================================================= */
+.modal{
+  position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;
+  padding:16px;background:rgba(0,0,0,.58);
+  -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+  opacity:0;visibility:hidden;transition:opacity .25s,visibility .25s;
+}
+.modal.abierto{opacity:1;visibility:visible}
+.ficha{
+  width:min(100%,700px);max-height:88vh;max-height:88dvh;display:flex;flex-direction:column;
+  padding:20px;border-radius:30px;
+  background:linear-gradient(135deg,rgba(6,35,42,.92),rgba(8,48,56,.84));
+  transform:scale(.94) translateY(10px);transition:transform .3s var(--ease);
+}
+.modal.abierto .ficha{transform:none}
+.ficha-cab{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.ficha-cab h2{margin:0;font-size:1.2rem;font-weight:800;color:var(--menta)}
+.cerrar{width:36px;height:36px;border-radius:50%;cursor:pointer;color:#fff;font-size:1rem;
+  background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.3)}
+.ficha-cuerpo{overflow:auto;padding-right:2px}
+.quien{padding:12px 14px;border-radius:16px;margin-bottom:12px;background:rgba(92,242,214,.09);border:1px solid rgba(92,242,214,.28)}
+.quien .n{font-weight:800}
+.quien .d{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;align-items:center;font-size:.82rem;color:var(--suave)}
+.datos{display:grid;gap:4px;font-size:.9rem;margin-bottom:6px}
+.datos .suave{color:var(--suave)} .datos .tenue{color:var(--tenue);font-size:.8rem}
+.subtitulo{margin:16px 0 8px;font-size:.7rem;font-weight:800;letter-spacing:.1em;color:var(--tenue)}
+.vitales{display:flex;flex-wrap:wrap;gap:8px}
+.vital{padding:8px 12px;border-radius:14px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.22)}
+.vital small{display:block;font-size:.62rem;font-weight:700;color:var(--tenue);letter-spacing:.04em}
+.vital b{font-size:1rem;color:var(--ambar)}
+.dx{padding:12px;border-radius:16px;margin-bottom:8px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18)}
+.dx .desc{font-weight:700;font-size:.9rem;margin-bottom:8px}
+.dx .pills{display:flex;flex-wrap:wrap;gap:6px}
+.acciones{display:flex;gap:10px;margin-top:14px}
+.acciones .btn-glow{flex:1;height:48px}
+
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:95;
+  padding:10px 18px;border-radius:999px;font-size:.85rem;font-weight:600;max-width:90vw;text-align:center;
+  background:rgba(0,0,0,.75);border:1px solid rgba(255,255,255,.25);animation:sube .4s var(--ease)}
+
+@media (max-width:560px){
+  .barra{flex-direction:column;align-items:flex-start}
+  .usuario{width:100%;justify-content:space-between}
+  .buscador{flex-direction:column}
+  .buscador .btn-glow{width:100%}
+  .lista{grid-template-columns:1fr}
+  .paciente{grid-template-columns:auto 1fr}
+  .paciente > .pill{grid-column:1/-1;justify-self:start}
+}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}}
+
+/* Impresión: solo la ficha, en blanco y negro */
+@media print{
+  body{background:#fff !important;color:#000}
+  .fondo,.vista,.toast,.splash,.bienvenida{display:none !important}
+  .modal{position:static;opacity:1;visibility:visible;background:none;padding:0;-webkit-backdrop-filter:none;backdrop-filter:none}
+  .ficha{max-height:none;width:100%;background:#fff;border:0;box-shadow:none;transform:none;padding:0;-webkit-backdrop-filter:none;backdrop-filter:none}
+  .ficha *{color:#000 !important;background:transparent !important;border-color:#999 !important;box-shadow:none !important}
+  .cerrar,.acciones{display:none !important}
+}
+</style>
+</head>
+<body>
+
+<div class="fondo" aria-hidden="true"><i class="mancha m1"></i><i class="mancha m2"></i><i class="mancha m3"></i></div>
+
+<!-- ================= PANTALLA DE CARGA ================= -->
+<div class="splash" id="splash">
+  <div class="logo-wrap">
+    <svg class="ecg" viewBox="0 0 120 60" aria-hidden="true"><path pathLength="100" d="M2 32 H30 L38 32 L45 10 L56 52 L64 32 H80 L86 26 L92 32 H118"/></svg>
+  </div>
+  <h1>Consultas HIS</h1>
+  <p>Iniciando sistema seguro…</p>
+  <div class="barra-carga"><i></i></div>
+</div>
+
+<!-- ================= LOGIN ================= -->
+<section id="vistaLogin" class="vista" hidden>
+  <div class="glass login" id="tarjetaLogin">
+    <div class="logo-wrap">
+      <svg class="ecg" viewBox="0 0 120 60" aria-hidden="true"><path pathLength="100" d="M2 32 H30 L38 32 L45 10 L56 52 L64 32 H80 L86 26 L92 32 H118"/></svg>
+    </div>
+    <h1>Consultas HIS</h1>
+    <p class="sub">Acceso exclusivo para personal de salud autorizado</p>
+    <form id="formLogin" autocomplete="on">
+      <label class="campo"><span class="ico">👤</span>
+        <input id="usuario" type="text" placeholder="Usuario" autocomplete="username"
+               autocapitalize="none" autocorrect="off" spellcheck="false" required>
+      </label>
+      <label class="campo"><span class="ico">🔒</span>
+        <input id="clave" type="password" placeholder="Contraseña" autocomplete="current-password" required>
+        <button class="ojo" id="verClave" type="button" aria-label="Mostrar contraseña">👁</button>
+      </label>
+      <button class="btn-glow" id="btnIngresar" type="submit"><i class="mini-spin"></i><span id="txtIngresar">Ingresar</span></button>
+    </form>
+    <p class="msg-error" id="loginError" hidden></p>
+    <p class="msg-info" id="loginInfo" hidden></p>
+    <div class="aviso-config" id="avisoConfig" hidden>
+      ⚙️ Falta pegar la configuración de Firebase en el archivo (busca <b>firebaseConfig</b>).
+    </div>
+    <div class="sedes-login" id="sedesLogin"></div>
+  </div>
+</section>
+
+<!-- ================= BIENVENIDA ================= -->
+<div class="bienvenida" id="bienvenida" hidden>
+  <svg class="check" viewBox="0 0 64 64" aria-hidden="true">
+    <circle pathLength="100" cx="32" cy="32" r="28"/>
+    <path pathLength="100" d="M19 33 L28 42 L45 23"/>
+  </svg>
+  <h2>Acceso concedido</h2>
+  <p id="bienvenidaNombre"></p>
+</div>
+
+<!-- ================= APP ================= -->
+<section id="vistaApp" class="vista" hidden>
+  <div class="contenedor">
+    <header class="barra anim" style="--i:0">
+      <div class="marca">
+        <div class="logo-wrap">
+          <svg class="ecg" viewBox="0 0 120 60" aria-hidden="true"><path pathLength="100" d="M2 32 H30 L38 32 L45 10 L56 52 L64 32 H80 L86 26 L92 32 H118"/></svg>
+        </div>
+        <div>
+          <h1>Consultas HIS</h1>
+          <small>MINSA · Historial de atenciones</small>
+        </div>
+      </div>
+      <div class="usuario">
+        <span id="usuarioNombre"></span>
+        <button class="btn-mini" id="btnSalir" type="button">Salir</button>
+      </div>
+    </header>
+
+    <div class="anim" style="--i:1">
+      <div class="chips" id="chips">
+        <button class="chip sel" data-filtro="General" type="button">General</button>
+        <button class="chip" data-filtro="Santo Domingo" type="button">Santo Domingo</button>
+        <button class="chip" data-filtro="Puestos" type="button">Puestos</button>
+      </div>
+      <div class="subchips" id="subchips" hidden></div>
+    </div>
+
+    <div class="glass buscador anim" style="--i:2">
+      <label class="campo"><span class="ico">🔍</span>
+        <input id="dni" inputmode="numeric" maxlength="8" placeholder="Buscar DNI (8 dígitos)" autocomplete="off">
+      </label>
+      <button class="btn-glow" id="btnBuscar" type="button" disabled>Buscar</button>
+    </div>
+
+    <div id="resultados"></div>
+
+    <footer class="pie-legal">
+      🔒 Información confidencial de salud · Uso exclusivo de personal autorizado<br>
+      La sesión se cierra sola tras unos minutos sin actividad
+    </footer>
+  </div>
+</section>
+
+<!-- ================= FICHA CLÍNICA ================= -->
+<div class="modal" id="modal">
+  <div class="glass ficha" role="dialog" aria-modal="true" aria-label="Ficha clínica">
+    <div class="ficha-cab">
+      <h2>📋 Ficha Clínica</h2>
+      <button class="cerrar" id="btnCerrarX" type="button" aria-label="Cerrar">✕</button>
+    </div>
+    <div class="ficha-cuerpo" id="fichaCuerpo"></div>
+    <div class="acciones">
+      <button class="btn-vidrio" id="btnImprimir" type="button">🖨️ Imprimir</button>
+      <button class="btn-glow" id="btnCerrar" type="button">Cerrar detalles</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import { getFirestore, collection, query, where, limit, getDocs }
+  from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut,
+         setPersistence, browserSessionPersistence }
+  from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+
+/* =========================================================
+   1. CONFIGURACIÓN
+   ========================================================= */
+// ← Pega aquí los datos de tu proyecto (Consola de Firebase → Configuración del proyecto → Tus apps → Web)
+const firebaseConfig = {
+  apiKey: "AIzaSyApvMeiCnAqfxxXQT_nlwpMECyNK93PFDg",
+  authDomain: "consultashis.firebaseapp.com",
+  databaseURL: "https://consultashis-default-rtdb.firebaseio.com",
+  projectId: "consultashis",
+  storageBucket: "consultashis.firebasestorage.app",
+  messagingSenderId: "247894210137",
+  appId: "1:247894210137:web:6908818196776569c6e348"
+};
+
+const CONFIG = {
+  requerirLogin: true,            // déjalo en true: son datos de salud
+  minutosInactividad: 15,         // cierra la sesión sola si nadie usa la página
+  dominioUsuarios: "consultas-his.app", // el usuario "sd" entra como sd@consultas-his.app (interno, no se envían correos)
+  coleccionPuestos: "pacientes",  // aquí están Simiris, Quinchayo, Jacanacas y Ñoma
+  coleccionSanto: "santo",        // aquí está Santo Domingo
+  nombreSanto: "SANTO DOMINGO",   // se muestra cuando el establecimiento viene vacío en la data
+  ordenInicial: "desc"            // "desc" = más recientes primero | "asc" = más antiguas primero
+};
+
+// Cada puesto se reconoce por una palabra clave dentro del nombre del establecimiento
+// (se ignoran tildes y mayúsculas, así "ÑOMA" = "NOMA").
+const SEDES = {
+  santo:     { nombre: "Santo Domingo",    color: "aqua" },
+  simiris:   { nombre: "Simiris",          color: "menta",   claves: ["SIMIRIS"] },
+  quinchayo: { nombre: "Quinchayo Grande", color: "ambar",   claves: ["QUINCHAYO"] },
+  jacanacas: { nombre: "Jacanacas",        color: "violeta", claves: ["JACANACAS"] },
+  noma:      { nombre: "Ñoma",             color: "rosa",    claves: ["NOMA"] },
+  otro:      { nombre: "Otro puesto",      color: "menta" }
+};
+const PUESTOS = ["simiris", "quinchayo", "jacanacas", "noma"];
+const CLASE_COLOR = { menta: "p-menta", aqua: "p-aqua", ambar: "p-ambar", violeta: "p-violeta", rosa: "p-rosa" };
+
+/* =========================================================
+   2. UTILIDADES
+   ========================================================= */
+const $ = id => document.getElementById(id);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const calmado = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const str = v => (v === undefined || v === null) ? "" : String(v);
+
+// Evita que un dato raro de la base de datos inyecte código en la página
+const esc = s => str(s).replace(/[&<>"']/g, c =>
+  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+const sinTildes = s => str(s).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+const valorValido = s => { const t = str(s).trim(); return t !== "" && !["-", "0", "0.0", "0.00"].includes(t); };
+const fechaCorta = s => str(s).split(/[ T]/)[0];
+const plural = (n, a, b) => `${n} ${n === 1 ? a : b}`;
+
+// Lee un campo probando varios nombres posibles (y convierte fechas de Firestore)
+function elegir(o, claves) {
+  for (const k of claves) {
+    let v = o[k];
+    if (v && typeof v.toDate === "function") v = v.toDate().toISOString().slice(0, 10);
+    const t = str(v).trim();
+    if (t !== "" && t !== "-") return t;
+  }
+  return "";
+}
+
+function parseFecha(s) {
+  const t = fechaCorta(s).trim();
+  let m = t.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (m) return { y: +m[1], m: +m[2], d: +m[3] };
+  m = t.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})/);
+  if (m) return { y: +m[3], m: +m[2], d: +m[1] };
+  return null;
+}
+const fechaOrden = s => { const f = parseFecha(s); return f ? Date.UTC(f.y, f.m - 1, f.d) : 0; };
+const num = s => parseInt(str(s), 10) || 0;
+const compararAtenciones = (a, b) =>
+  fechaOrden(a.fecha) - fechaOrden(b.fecha) ||
+  str(a.lote).localeCompare(str(b.lote)) ||
+  num(a.pag) - num(b.pag) || num(a.reg) - num(b.reg);
+
+let temporizadorToast;
+function aviso(texto) {
+  const t = $("toast");
+  t.textContent = texto;
+  t.hidden = false;
+  clearTimeout(temporizadorToast);
+  temporizadorToast = setTimeout(() => (t.hidden = true), 4500);
+}
+
+/* ---- Edad y sexo ---- */
+function normSexo(s) {
+  const t = str(s).trim().toUpperCase();
+  if (t.startsWith("F")) return "F";
+  if (t.startsWith("M") || t.startsWith("H")) return "M";
+  return "";
+}
+
+// Diferencia exacta entre dos fechas {y,m,d} en años, meses y días
+function diferencia(n, r) {
+  let a = r.y - n.y, m = r.m - n.m, d = r.d - n.d;
+  if (d < 0) { m--; d += new Date(Date.UTC(r.y, r.m - 1, 0)).getUTCDate(); }
+  if (m < 0) { a--; m += 12; }
+  return a < 0 ? null : { a, m, d };
+}
+function hoyObj() {
+  const h = new Date();
+  return { y: h.getFullYear(), m: h.getMonth() + 1, d: h.getDate() };
+}
+
+// "32 años 4 meses 12 días" (se omiten las unidades vacías del principio)
+function textoEdadDetallada(df) {
+  const partes = [];
+  if (df.a > 0) partes.push(plural(df.a, "año", "años"));
+  if (df.a > 0 || df.m > 0) partes.push(plural(df.m, "mes", "meses"));
+  partes.push(plural(df.d, "día", "días"));
+  return partes.join(" ");
+}
+
+// Para el encabezado: bebés en meses o días, niños con meses, adultos solo años
+function textoEdadCompacta(df) {
+  if (df.a < 1) return df.m >= 1 ? plural(df.m, "mes", "meses") : plural(df.d, "día", "días");
+  if (df.a < 5 && df.m > 0) return `${plural(df.a, "año", "años")} ${plural(df.m, "mes", "meses")}`;
+  return plural(df.a, "año", "años");
+}
+
+// Edad al día de hoy
+function edadDesdeNacimiento(n) {
+  const df = diferencia(n, hoyObj());
+  return df ? textoEdadCompacta(df) : "";
+}
+
+// Edad que tenía el paciente el día de cada atención (años, meses y días)
+function edadEnAtencion(p, a) {
+  const nac = parseFecha(p.fechaNac), ref = parseFecha(a.fecha);
+  if (nac && ref) {
+    const df = diferencia(nac, ref);
+    if (df) return textoEdadDetallada(df);
+  }
+  return edadDeRegistro(a.edad, a.tipoEdad);   // si no hay fecha de nacimiento, usa la edad registrada
+}
+
+function edadDeRegistro(edad, tipo) {
+  const n = parseInt(edad, 10);
+  if (isNaN(n)) return "";
+  const t = str(tipo).trim().toUpperCase()[0] || "A";
+  if (t === "M") return plural(n, "mes", "meses");
+  if (t === "D") return plural(n, "día", "días");
+  return plural(n, "año", "años");
+}
+
+// Prefiere la fecha de nacimiento; si no existe, usa la edad registrada en la última atención
+function demografia(p) {
+  let edad = "";
+  const nac = parseFecha(p.fechaNac);
+  if (nac) edad = edadDesdeNacimiento(nac);
+  if (!edad && p.edad) edad = edadDeRegistro(p.edad, p.tipoEdad);
+  if (!edad) {
+    const a = [...p.atenciones].reverse().find(x => x.edad);
+    if (a) edad = edadDeRegistro(a.edad, a.tipoEdad);
+  }
+  let sexo = normSexo(p.sexo);
+  if (!sexo) {
+    const a = [...p.atenciones].reverse().find(x => normSexo(x.sexo));
+    if (a) sexo = normSexo(a.sexo);
+  }
+  // Historia clínica: puede ser distinta en cada sede, así que se agrupa por número
+  const hcs = new Map();
+  for (const a of p.atenciones) {
+    if (!a.historiaClinica) continue;
+    if (!hcs.has(a.historiaClinica)) hcs.set(a.historiaClinica, new Set());
+    hcs.get(a.historiaClinica).add(a.sede);
+  }
+  if (!hcs.size && p.historiaClinica) hcs.set(p.historiaClinica, new Set());
+  const historias = [...hcs].map(([hc, sedes]) => ({ hc, sedes: [...sedes] }));
+  return { edad, sexo, historias };
+}
+
+const iniciales = nombre => {
+  const p = nombre.trim().split(/\s+/).filter(Boolean);
+  return p.length ? (p[0][0] + (p.length > 1 ? p[p.length - 1][0] : "")).toUpperCase() : "👤";
+};
+
+function pastillaDemo(d, conHC = true) {
+  let h = "";
+  if (d.edad) h += `<span class="pill p-ambar">🎂 ${esc(d.edad)}</span>`;
+  if (d.sexo === "F") h += `<span class="pill p-rosa">♀ Femenino</span>`;
+  if (d.sexo === "M") h += `<span class="pill p-aqua">♂ Masculino</span>`;
+  if (conHC) {
+    const varias = d.historias.length > 1;
+    for (const x of d.historias) {
+      const sede = varias && x.sedes.length
+        ? " · " + x.sedes.map(k => (SEDES[k] || SEDES.otro).nombre).join("/") : "";
+      h += `<span class="pill p-violeta">📁 HC ${esc(x.hc)}${esc(sede)}</span>`;
+    }
+  }
+  return h;
+}
+const pastillaSede = k => {
+  const s = SEDES[k] || SEDES.otro;
+  return `<span class="pill ${CLASE_COLOR[s.color]}">${esc(s.nombre)}</span>`;
+};
+
+/* =========================================================
+   3. FIREBASE
+   ========================================================= */
+const configurado = !Object.values(firebaseConfig).some(v => v === "PEGA_AQUI");
+let db = null, auth = null;
+if (configurado) {
+  const app = initializeApp(firebaseConfig);
+  db = getFirestore(app);
+  auth = getAuth(app);
+  // La sesión se cierra al cerrar la pestaña (importante en computadoras compartidas)
+  setPersistence(auth, browserSessionPersistence).catch(() => {});
+}
+
+function normalizarPaciente(d) {
+  const atenciones = (Array.isArray(d.atenciones) ? d.atenciones : []).map(a => ({
+    id: str(a.id), fecha: str(a.fecha), establecimiento: str(a.establecimiento),
+    especialidad: str(a.especialidad),
+    condicion: ["1", "1.0"].includes(str(a.condicion).trim()) ? "GESTANTE" : str(a.condicion),
+    lote: str(a.lote), pag: str(a.pag), reg: str(a.reg), profesional: str(a.profesional),
+    peso: str(a.peso), talla: str(a.talla), hemo: str(a.hemo),
+    pAbdom: str(a.pAbdom), pCefal: str(a.pCefal),
+    edad: elegir(a, ["edad", "edadReg", "Edad_Reg"]),
+    tipoEdad: elegir(a, ["tipoEdad", "tipo_edad", "Tipo_Edad"]),
+    sexo: elegir(a, ["sexo", "Sexo", "SEXO", "genero", "Genero", "GENERO"]),
+    fechaNac: elegir(a, ["fechaNacimiento", "fecha_nacimiento", "fechaNac", "Fecha_Nacimiento_Paciente"]),
+    historiaClinica: elegir(a, ["historiaClinica", "historia_clinica", "Historia_Clinica", "HISTORIA_CLINICA", "hc", "HC"]),
+    sede: "",
+    diagnosticos: (Array.isArray(a.diagnosticos) ? a.diagnosticos : []).map(x => ({
+      codigo: str(x.codigo), descripcion: str(x.descripcion), tipo: str(x.tipo),
+      lab1: str(x.lab1), lab2: str(x.lab2), lab3: str(x.lab3)
+    }))
+  }));
+  // Si un dato no viene a nivel de paciente, se toma de sus atenciones
+  const deAtenciones = campo => { const x = atenciones.find(a => a[campo]); return x ? x[campo] : ""; };
+  return {
+    dni: str(d.dni), nombres: str(d.nombres), apellidos: str(d.apellidos),
+    sexo: elegir(d, ["sexo", "Sexo", "SEXO", "genero", "Genero", "GENERO"]) || deAtenciones("sexo"),
+    fechaNac: elegir(d, ["fechaNacimiento", "fecha_nacimiento", "fechaNac", "Fecha_Nacimiento_Paciente", "nacimiento"]) || deAtenciones("fechaNac"),
+    historiaClinica: elegir(d, ["historiaClinica", "historia_clinica", "Historia_Clinica", "HISTORIA_CLINICA", "hc", "HC"]) || deAtenciones("historiaClinica"),
+    edad: elegir(d, ["edad", "Edad", "edadReg", "Edad_Reg"]),
+    tipoEdad: elegir(d, ["tipoEdad", "tipo_edad", "Tipo_Edad"]),
+    atenciones
+  };
+}
+
+function sedeDePuesto(establecimiento) {
+  const t = sinTildes(establecimiento);
+  for (const k of PUESTOS) if (SEDES[k].claves.some(c => t.includes(c))) return k;
+  return "otro";
+}
+
+async function buscarEn(coleccion, dni) {
+  const q = query(collection(db, coleccion), where("dni", "==", dni), limit(1));
+  const snap = await getDocs(q);
+  return snap.empty ? null : normalizarPaciente(snap.docs[0].data());
+}
+
+// Se consultan las dos colecciones una sola vez por DNI; cambiar de sede después no vuelve a leer la base
+let cache = { dni: "", puestos: null, santo: null };
+
+async function obtener(dni, forzar) {
+  if (!forzar && cache.dni === dni) return cache;
+  const [puestos, santo] = await Promise.all([
+    buscarEn(CONFIG.coleccionPuestos, dni),
+    buscarEn(CONFIG.coleccionSanto, dni)
+  ]);
+  if (puestos) puestos.atenciones.forEach(a => { a.sede = sedeDePuesto(a.establecimiento); });
+  if (santo) santo.atenciones.forEach(a => {
+    a.sede = "santo";
+    if (!a.establecimiento.trim()) a.establecimiento = CONFIG.nombreSanto;   // en la data viene vacío
+  });
+  cache = { dni, puestos, santo };
+  return cache;
+}
+
+function armarResultado(raw, filtro, puesto) {
+  const usaPuestos = filtro === "General" || filtro === "Puestos";
+  const usaSanto = filtro === "General" || filtro === "Santo Domingo";
+  const a = usaPuestos ? raw.puestos : null;
+  const b = usaSanto ? raw.santo : null;
+  const base = a || b;
+  if (!base) return null;
+
+  let atenciones = [...(a ? a.atenciones : []), ...(b ? b.atenciones : [])];
+  if (filtro === "Puestos" && puesto !== "todos") atenciones = atenciones.filter(x => x.sede === puesto);
+  atenciones.sort(compararAtenciones);
+
+  // Si un dato (sexo, edad…) falta en una colección, se toma de la otra
+  const otra = base === raw.puestos ? raw.santo : raw.puestos;
+  const rellenar = campo => base[campo] || (otra ? otra[campo] : "") || "";
+  return {
+    dni: base.dni, nombres: base.nombres, apellidos: base.apellidos,
+    sexo: rellenar("sexo"), fechaNac: rellenar("fechaNac"),
+    historiaClinica: rellenar("historiaClinica"),
+    edad: rellenar("edad"), tipoEdad: rellenar("tipoEdad"),
+    atenciones
+  };
+}
+
+/* =========================================================
+   4. ESTADO Y PINTADO
+   ========================================================= */
+const estado = {
+  filtro: "General", puesto: "todos",
+  paciente: undefined, buscando: false, error: "",
+  visibles: [], textoDx: "", orden: CONFIG.ordenInicial
+};
+
+function pintarSubchips() {
+  const opciones = [["todos", "Todos los puestos"], ...PUESTOS.map(k => [k, SEDES[k].nombre])];
+  $("subchips").innerHTML = opciones.map(([id, nombre]) =>
+    `<button class="chip chip-sm ${estado.puesto === id ? "sel" : ""}" data-puesto="${id}" type="button">${esc(nombre)}</button>`
+  ).join("");
+}
+
+function renderResultados() {
+  const cont = $("resultados");
+
+  if (estado.buscando) {
+    cont.innerHTML = `<div class="esq" style="height:96px;margin-bottom:12px"></div>
+      <div class="lista"><div class="esq"></div><div class="esq"></div><div class="esq"></div><div class="esq"></div></div>`;
+    return;
+  }
+  if (estado.error) {
+    cont.innerHTML = `<div class="glass vacio"><div class="grande">⚠️</div>${esc(estado.error)}</div>`;
+    return;
+  }
+  if (estado.paciente === undefined) { cont.innerHTML = ""; return; }
+  if (estado.paciente === null) {
+    cont.innerHTML = `<div class="glass vacio"><div class="grande">🔎</div>No se encontraron registros para el DNI <b>${esc($("dni").value)}</b> en la sede seleccionada</div>`;
+    return;
+  }
+
+  const p = estado.paciente;
+  const nombre = `${p.nombres} ${p.apellidos}`.trim() || "Paciente";
+  const dem = demografia(p);
+
+  // Resumen por sede (solo si el paciente se atendió en más de una)
+  const porSede = {};
+  p.atenciones.forEach(a => { porSede[a.sede] = (porSede[a.sede] || 0) + 1; });
+  const claves = Object.keys(porSede);
+  const resumen = claves.length > 1
+    ? `<div class="resumen"><small>Atenciones por sede</small>${claves.map(k =>
+        `<span class="pill ${CLASE_COLOR[(SEDES[k] || SEDES.otro).color]}">${esc((SEDES[k] || SEDES.otro).nombre)} · ${porSede[k]}</span>`).join("")}</div>`
+    : "";
+
+  let html = `
+    <div class="glass paciente">
+      <div class="avatar">${esc(iniciales(nombre))}</div>
+      <div>
+        <div class="nombre">${esc(nombre)}</div>
+        <div class="dni">DNI ${esc(p.dni || $("dni").value)}</div>
+        <div class="demo">${pastillaDemo(dem)}</div>
+      </div>
+      <span class="pill p-menta">${p.atenciones.length} atenciones</span>
+      ${resumen}
+    </div>`;
+
+  if (!p.atenciones.length) {
+    html += `<div class="glass vacio"><div class="grande">ℹ️</div>El paciente no tiene atenciones registradas en la sede seleccionada.</div>`;
+    cont.innerHTML = html;
+    return;
+  }
+
+  html += `
+    <div class="toolbar">
+      <label class="campo glass"><span class="ico">⏷</span>
+        <input id="filtroDx" placeholder="Filtrar por diagnóstico o código CIE-10" autocomplete="off" value="${esc(estado.textoDx)}">
+      </label>
+      <button class="btn-vidrio" id="btnOrden" type="button"></button>
+    </div>
+    <div class="lista" id="lista"></div>`;
+  cont.innerHTML = html;
+
+  $("filtroDx").addEventListener("input", e => { estado.textoDx = e.target.value; renderLista(); });
+  $("btnOrden").addEventListener("click", () => {
+    estado.orden = estado.orden === "desc" ? "asc" : "desc";
+    renderLista();
+  });
+  renderLista();
+}
+
+function renderLista() {
+  const p = estado.paciente;
+  const t = estado.textoDx.trim().toLowerCase();
+  let arr = t
+    ? p.atenciones.filter(a => a.diagnosticos.some(d =>
+        d.codigo.toLowerCase().includes(t) || d.descripcion.toLowerCase().includes(t)))
+    : p.atenciones.slice();
+  if (estado.orden === "desc") arr.reverse();
+  estado.visibles = arr;
+
+  $("btnOrden").textContent = estado.orden === "desc" ? "↓ Más recientes primero" : "↑ Más antiguas primero";
+
+  const lista = $("lista");
+  if (!arr.length) {
+    lista.innerHTML = `<div class="vacio" style="grid-column:1/-1">No se encontraron atenciones con: ${esc(estado.textoDx)}</div>`;
+    return;
+  }
+
+  const anioDe = a => { const f = fechaOrden(a.fecha); return f ? new Date(f).getUTCFullYear() : "Sin fecha"; };
+  const conteo = new Map();
+  arr.forEach(a => conteo.set(anioDe(a), (conteo.get(anioDe(a)) || 0) + 1));
+
+  let html = "", ultimo = null;
+  arr.forEach((a, i) => {
+    const y = anioDe(a);
+    if (y !== ultimo) {
+      html += `<div class="anio">${y}<span>${plural(conteo.get(y), "atención", "atenciones")}</span></div>`;
+      ultimo = y;
+    }
+    html += `
+      <article class="glass tarjeta" data-i="${i}" tabindex="0" role="button" style="--i:${Math.min(i, 14)}">
+        <div class="fila">
+          <div class="fecha">📅 ${esc(fechaCorta(a.fecha))}</div>
+          <div class="pills">${pastillaSede(a.sede)}${valorValido(a.condicion) ? `<span class="pill p-menta">${esc(a.condicion)}</span>` : ""}</div>
+        </div>
+        <div class="estab">🏥 ${esc(a.establecimiento)}</div>
+        <div class="espec">🩺 ${esc(a.especialidad)}</div>
+        ${edadEnAtencion(p, a) ? `<div class="espec">🎂 Edad en la atención: <b>${esc(edadEnAtencion(p, a))}</b></div>` : ""}
+        <hr>
+        <div class="fila pie"><span>Lote ${esc(a.lote)} · Pág ${esc(a.pag)} · Reg ${esc(a.reg)}</span><b>Ver detalles ➜</b></div>
+      </article>`;
+  });
+  lista.innerHTML = html;
+}
+
+/* =========================================================
+   5. FICHA CLÍNICA (modal)
+   ========================================================= */
+function abrirFicha(a) {
+  const p = estado.paciente;
+  const nombre = `${p.nombres} ${p.apellidos}`.trim();
+  const dem = demografia(p);
+
+  // Un mismo código repetido (p. ej. dos labs del mismo examen) se junta en una sola tarjeta
+  const grupos = new Map();
+  for (const d of a.diagnosticos) {
+    const llave = `${d.codigo}\u0001${d.descripcion}\u0001${d.tipo}`;
+    if (!grupos.has(llave)) grupos.set(llave, { ...d, labs: [] });
+    grupos.get(llave).labs.push(...[d.lab1, d.lab2, d.lab3].filter(v => v.trim() !== "" && v.trim() !== "-"));
+  }
+
+  const vitales = [
+    valorValido(a.peso)   && ["PESO", `${a.peso} kg`],
+    valorValido(a.talla)  && ["TALLA", `${a.talla} cm`],
+    valorValido(a.hemo)   && ["HEMOGLOBINA", a.hemo],
+    valorValido(a.pAbdom) && ["P. ABDOMINAL", `${a.pAbdom} cm`],
+    valorValido(a.pCefal) && ["P. CEFÁLICO", `${a.pCefal} cm`]
+  ].filter(Boolean);
+
+  const dxHtml = [...grupos.values()].map(d => `
+    <div class="dx">
+      <div class="desc">${esc(d.descripcion)}</div>
+      <div class="pills">
+        <span class="pill p-menta">Cód ${esc(d.codigo)}</span>
+        <span class="pill p-aqua">Tipo ${esc(d.tipo)}</span>
+        ${d.labs.map((v, i) => `<span class="pill p-ambar">${d.labs.length === 1 ? "Lab" : "Lab " + (i + 1)}: ${esc(v)}</span>`).join("")}
+      </div>
+    </div>`).join("");
+
+  $("fichaCuerpo").innerHTML = `
+    <div class="quien">
+      <div class="n">👤 ${esc(nombre || "Paciente")}</div>
+      <div class="d">DNI ${esc(p.dni)} ${pastillaDemo(dem, false)}</div>
+    </div>
+    <div class="datos">
+      <div><b>📅 ${esc(fechaCorta(a.fecha))}</b> ${pastillaSede(a.sede)}</div>
+      <div>🏥 ${esc(a.establecimiento)}</div>
+      <div class="suave">🩺 ${esc(a.especialidad)}</div>
+      ${edadEnAtencion(p, a) ? `<div class="suave">🎂 Edad en la atención: <b>${esc(edadEnAtencion(p, a))}</b></div>` : ""}
+      ${a.historiaClinica ? `<div class="suave">📁 Historia clínica: <b>${esc(a.historiaClinica)}</b></div>` : ""}
+      <div class="suave">👨‍⚕️ ${esc(a.profesional)}</div>
+      <div class="tenue">📁 Lote ${esc(a.lote)} · Pág ${esc(a.pag)} · Reg ${esc(a.reg)}</div>
+    </div>
+    <div class="subtitulo">TRIAJE / VITALES</div>
+    ${vitales.length
+      ? `<div class="vitales">${vitales.map(([e, v]) => `<div class="vital"><small>${e}</small><b>${esc(v)}</b></div>`).join("")}</div>`
+      : `<div class="datos"><div class="tenue">Sin datos de triaje en esta atención</div></div>`}
+    <div class="subtitulo">DIAGNÓSTICOS Y PROCEDIMIENTOS</div>
+    ${dxHtml || `<div class="datos"><div class="tenue">Sin diagnósticos registrados</div></div>`}`;
+
+  $("modal").classList.add("abierto");
+  $("fichaCuerpo").scrollTop = 0;
+}
+const cerrarFicha = () => $("modal").classList.remove("abierto");
+
+/* =========================================================
+   6. BÚSQUEDA
+   ========================================================= */
+async function buscar(forzar = true) {
+  const dni = $("dni").value.trim();
+  if (dni.length !== 8 || estado.buscando || !db) return;
+  estado.buscando = true;
+  estado.error = "";
+  estado.textoDx = "";
+  $("btnBuscar").disabled = true;
+  $("btnBuscar").textContent = "...";
+  renderResultados();
+
+  try {
+    const raw = await obtener(dni, forzar);
+    estado.paciente = armarResultado(raw, estado.filtro, estado.puesto);
+  } catch (e) {
+    console.error(e);
+    estado.paciente = undefined;
+    estado.error = e && e.code === "permission-denied"
+      ? "No tienes permiso para ver estos datos. Verifica que tu cuenta esté autorizada."
+      : "No se pudo consultar. Revisa tu conexión a internet e inténtalo de nuevo.";
+  }
+
+  estado.buscando = false;
+  $("btnBuscar").textContent = "Buscar";
+  actualizarBoton();
+  renderResultados();
+}
+
+function actualizarBoton() {
+  $("btnBuscar").disabled = $("dni").value.length !== 8 || estado.buscando;
+}
+
+function limpiarPantalla() {
+  cache = { dni: "", puestos: null, santo: null };   // no se guardan datos de pacientes al salir
+  estado.paciente = undefined;
+  estado.error = "";
+  estado.textoDx = "";
+  estado.visibles = [];
+  $("resultados").innerHTML = "";
+  $("dni").value = "";
+  $("fichaCuerpo").innerHTML = "";
+  cerrarFicha();
+  actualizarBoton();
+}
+
+/* =========================================================
+   7. SESIÓN (acceso por usuario, sin correo)
+   ========================================================= */
+// El usuario "sd" se convierte internamente en sd@consultas-his.app.
+// Si alguien escribe un correo completo, se respeta tal cual.
+function usuarioACorreo(u) {
+  const limpio = u.trim().toLowerCase().replace(/\s+/g, "");
+  return limpio.includes("@") ? limpio : `${limpio}@${CONFIG.dominioUsuarios}`;
+}
+const nombreDeUsuario = user => (user && user.email ? user.email.split("@")[0].toUpperCase() : "");
+
+function reiniciarAnimacion(el, clase) {
+  el.classList.remove(clase);
+  void el.offsetWidth;
+  el.classList.add(clase);
+}
+
+function mostrarLogin(mensajeInfo) {
+  limpiarPantalla();
+  $("vistaApp").hidden = true;
+  $("vistaLogin").hidden = false;
+  $("avisoConfig").hidden = configurado;
+  $("loginInfo").hidden = !mensajeInfo;
+  $("loginInfo").textContent = mensajeInfo || "";
+  reiniciarAnimacion($("vistaLogin"), "entra");
+}
+
+function mostrarApp(user) {
+  $("vistaLogin").hidden = true;
+  $("vistaApp").hidden = false;
+  $("usuarioNombre").textContent = user ? `👤 ${nombreDeUsuario(user)}` : "";
+  $("btnSalir").hidden = !user;
+  reiniciarAnimacion($("vistaApp"), "animar");
+  reiniciarInactividad(true);
+  if (!matchMedia("(pointer: coarse)").matches) $("dni").focus();
+}
+
+async function mostrarBienvenida(user) {
+  const b = $("bienvenida");
+  $("bienvenidaNombre").textContent = `Sesión de ${nombreDeUsuario(user)}`;
+  $("vistaLogin").classList.add("saliendo");
+  b.hidden = false;
+  void b.offsetWidth;
+  b.classList.add("on");
+  await sleep(calmado ? 400 : 1700);
+  b.classList.remove("on");
+  await sleep(calmado ? 50 : 350);
+  b.hidden = true;
+  $("vistaLogin").classList.remove("saliendo");
+}
+
+/* Cierre automático por inactividad (con aviso 1 minuto antes) */
+let tAviso, tCierre, ultimoReinicio = 0;
+function reiniciarInactividad(forzar) {
+  const ahora = Date.now();
+  if (!forzar && ahora - ultimoReinicio < 5000) return;
+  ultimoReinicio = ahora;
+  clearTimeout(tAviso);
+  clearTimeout(tCierre);
+  if (!(CONFIG.requerirLogin && auth && auth.currentUser)) return;
+  const ms = CONFIG.minutosInactividad * 60000;
+  tAviso = setTimeout(() => aviso("La sesión se cerrará en 1 minuto por inactividad"), Math.max(0, ms - 60000));
+  tCierre = setTimeout(async () => {
+    await signOut(auth);
+    mostrarLogin("Sesión cerrada por inactividad.");
+  }, ms);
+}
+["click", "keydown", "mousemove", "touchstart", "scroll"].forEach(ev =>
+  window.addEventListener(ev, () => reiniciarInactividad(false), { passive: true }));
+
+const mensajesAuth = {
+  "auth/invalid-credential": "Usuario o contraseña incorrectos.",
+  "auth/wrong-password": "Usuario o contraseña incorrectos.",
+  "auth/user-not-found": "Usuario o contraseña incorrectos.",
+  "auth/invalid-email": "El usuario no es válido (usa letras y números, sin espacios).",
+  "auth/too-many-requests": "Demasiados intentos. Espera unos minutos e inténtalo otra vez.",
+  "auth/network-request-failed": "Sin conexión a internet.",
+  "auth/user-disabled": "Esta cuenta está deshabilitada."
+};
+
+let bienvenidaPendiente = false;
+
+$("formLogin").addEventListener("submit", async e => {
+  e.preventDefault();
+  if (!configurado) return;
+  const btn = $("btnIngresar");
+  $("loginError").hidden = true;
+  $("loginInfo").hidden = true;
+  btn.disabled = true;
+  btn.classList.add("cargando");
+  $("txtIngresar").textContent = "Verificando…";
+  bienvenidaPendiente = true;
+  try {
+    await signInWithEmailAndPassword(auth, usuarioACorreo($("usuario").value), $("clave").value);
+    $("clave").value = "";
+  } catch (err) {
+    bienvenidaPendiente = false;
+    $("loginError").textContent = mensajesAuth[err.code] || "No se pudo iniciar sesión.";
+    $("loginError").hidden = false;
+    if (!calmado) {
+      $("tarjetaLogin").animate(
+        [{ transform: "translateX(0)" }, { transform: "translateX(-9px)" }, { transform: "translateX(9px)" },
+         { transform: "translateX(-6px)" }, { transform: "translateX(6px)" }, { transform: "translateX(0)" }],
+        { duration: 420, easing: "ease-in-out" });
+    }
+  }
+  btn.disabled = false;
+  btn.classList.remove("cargando");
+  $("txtIngresar").textContent = "Ingresar";
+});
+
+$("verClave").addEventListener("click", () => {
+  const input = $("clave");
+  const ver = input.type === "password";
+  input.type = ver ? "text" : "password";
+  $("verClave").textContent = ver ? "🙈" : "👁";
+});
+
+$("btnSalir").addEventListener("click", async () => {
+  if (auth) await signOut(auth);
+});
+
+/* =========================================================
+   8. EVENTOS
+   ========================================================= */
+$("dni").addEventListener("input", e => {
+  e.target.value = e.target.value.replace(/\D/g, "").slice(0, 8);
+  actualizarBoton();
+});
+$("dni").addEventListener("keydown", e => { if (e.key === "Enter") buscar(true); });
+$("btnBuscar").addEventListener("click", () => buscar(true));
+
+$("chips").addEventListener("click", e => {
+  const chip = e.target.closest(".chip");
+  if (!chip) return;
+  estado.filtro = chip.dataset.filtro;
+  document.querySelectorAll("#chips .chip").forEach(c => c.classList.toggle("sel", c === chip));
+  const verPuestos = estado.filtro === "Puestos";
+  $("subchips").hidden = !verPuestos;
+  if (verPuestos) { pintarSubchips(); reiniciarAnimacion($("subchips"), "abre"); }
+  if ($("dni").value.length === 8) buscar(false);   // usa lo ya consultado, sin volver a leer la base
+});
+
+$("subchips").addEventListener("click", e => {
+  const chip = e.target.closest(".chip");
+  if (!chip) return;
+  estado.puesto = chip.dataset.puesto;
+  pintarSubchips();
+  if ($("dni").value.length === 8) buscar(false);
+});
+
+function abrirDesdeTarjeta(el) {
+  const tarjeta = el.closest(".tarjeta");
+  if (tarjeta) abrirFicha(estado.visibles[+tarjeta.dataset.i]);
+}
+$("resultados").addEventListener("click", e => abrirDesdeTarjeta(e.target));
+$("resultados").addEventListener("keydown", e => {
+  if (e.key === "Enter" || e.key === " ") { e.preventDefault(); abrirDesdeTarjeta(e.target); }
+});
+
+$("btnCerrar").addEventListener("click", cerrarFicha);
+$("btnCerrarX").addEventListener("click", cerrarFicha);
+$("btnImprimir").addEventListener("click", () => window.print());
+$("modal").addEventListener("click", e => { if (e.target === $("modal")) cerrarFicha(); });
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape") cerrarFicha();
+  // Atajo: "/" lleva el cursor al buscador de DNI
+  if (e.key === "/" && !["INPUT", "TEXTAREA"].includes(document.activeElement.tagName) && !$("vistaApp").hidden) {
+    e.preventDefault();
+    $("dni").focus();
+  }
+});
+
+/* =========================================================
+   9. ARRANQUE
+   ========================================================= */
+function ocultarSplash() { $("splash").classList.add("oculto"); }
+
+// Sedes en la tarjeta de login
+$("sedesLogin").innerHTML = `<small>Establecimientos</small>` +
+  ["santo", ...PUESTOS].map(pastillaSede).join("");
+[...$("tarjetaLogin").children].forEach((el, i) => el.style.setProperty("--i", i));
+
+const inicioSplash = Date.now();
+const esperarSplash = () => sleep(Math.max(0, (calmado ? 200 : 1300) - (Date.now() - inicioSplash)));
+
+if (!CONFIG.requerirLogin) {
+  esperarSplash().then(() => { ocultarSplash(); mostrarApp(null); });
+} else if (!configurado) {
+  esperarSplash().then(() => { ocultarSplash(); mostrarLogin(); });
+} else {
+  let primera = true;
+  onAuthStateChanged(auth, async user => {
+    if (primera) { primera = false; await esperarSplash(); ocultarSplash(); }
+    if (user) {
+      if (bienvenidaPendiente) { bienvenidaPendiente = false; await mostrarBienvenida(user); }
+      mostrarApp(user);
+    } else {
+      mostrarLogin();
+    }
+  });
+}
+</script>
+</body>
+</html>
