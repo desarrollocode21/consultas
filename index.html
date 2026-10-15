@@ -303,12 +303,15 @@ body{
 }
 @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}}
 
+/* Impresión: sin encabezados ni pies del navegador (fecha, título, dirección web y número de página) */
+@page{margin:0}
+
 /* Impresión: solo la ficha, en blanco y negro */
 @media print{
   body{background:#fff !important;color:#000}
   .fondo,.vista,.toast,.splash,.bienvenida{display:none !important}
   .modal{position:static;opacity:1;visibility:visible;background:none;padding:0;-webkit-backdrop-filter:none;backdrop-filter:none}
-  .ficha{max-height:none;width:100%;background:#fff;border:0;box-shadow:none;transform:none;padding:0;-webkit-backdrop-filter:none;backdrop-filter:none}
+  .ficha{max-height:none;width:100%;background:#fff;border:0;box-shadow:none;transform:none;padding:15mm;-webkit-backdrop-filter:none;backdrop-filter:none}
   .ficha *{color:#000 !important;background:transparent !important;border-color:#999 !important;box-shadow:none !important}
   .cerrar,.acciones{display:none !important}
 }
